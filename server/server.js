@@ -9,10 +9,10 @@ const app = express();
 const port = 3000;
 
 // create application/json parser
-const jsonParser = bodyParser.json()
+const jsonParser = bodyParser.json();
 
 // create application/x-www-form-urlencoded parser
-const urlencodedParser = bodyParser.urlencoded({ extended: false })
+const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 app.post('/todos', jsonParser, (req, res) => {
   if (!req.body) return res.status(400);
