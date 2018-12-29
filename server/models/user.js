@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -19,12 +20,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     minlength: 8,
     required: true,
-    validate: {
-      validator(value) {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
-      },
-      message: props => "The password doesn't contain eight characters, at least one uppercase letter, one lowercase letter, one number and one special character",
-    },
   },
   tokens: [{
     access: {
@@ -70,6 +65,20 @@ userSchema.statics.findByToken = function (token) {
     'tokens.access': decoded.access,
   });
 };
+
+userSchema.pre('save', function (next) {
+  const user = this;
+  if (user.isModified('password')) {
+    bcrypt.genSalt(10, function (err, salt) {
+      bcrypt.hash(user.password, salt, function (err, hash) {
+        user.password = hash;
+        next();
+      });
+    });
+  } else {
+    next();
+  }
+});
 
 const User = new mongoose.model('User', userSchema);
 
