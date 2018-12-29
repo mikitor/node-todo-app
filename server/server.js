@@ -30,6 +30,23 @@ app.post('/todos', jsonParser, (req, res) => {
   });
 });
 
+app.post('/users', jsonParser, (req, res) => {
+  if (!req.body) return res.status(400);
+  const { email, password } = req.body;
+  const user = new User({
+    email,
+    password,
+  });
+  user
+    .save()
+    .then(() => user.generateAuthToken())
+    .then((token) => {
+      res.header('x-auth', token).send(user);
+    })
+    .catch((err) => {
+      res.status(400).send(err);
+    });
+});
 
 app.get('/todos', (req, res) => {
   Todo.find().then((todos) => {
