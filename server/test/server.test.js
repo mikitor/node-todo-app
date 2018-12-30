@@ -205,3 +205,31 @@ describe('PATCH /todos/:id', () => {
       .end(done);
   });
 });
+
+describe('GET /users/me', () => {
+  it('should return an id and email if user has correct token', (done) => {
+    const id = users[0]._id.toHexString();
+    const email = users[0].email;
+    const token = users[0].tokens[0].token;
+
+    request(app)
+      .get('/users/me')
+      .set('x-auth', token)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.email).toBe(email);
+        expect(res.body._id).toBe(id);
+      })
+      .end(done);
+  });
+  it('should return 401 if user does not have correct token', (done) => {
+    request(app)
+      .get('/users/me')
+      .expect(401)
+      .expect((res) => {
+        expect(res.body).toEqual({});
+      })
+      .end(done);
+  });
+});
+
