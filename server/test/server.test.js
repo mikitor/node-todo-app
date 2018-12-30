@@ -4,19 +4,11 @@ const { ObjectID } = require('mongodb');
 
 const { app } = require('../server');
 const { Todo } = require('../models/todo');
+const { User } = require('../models/user');
+const { todos, users, populateTodos, populateUsers } = require('./seed/seed');
 
-const todos = [
-  {
-    _id: new ObjectID(),
-    text: 'First todo',
-    completed: true,
-    completedAt: new Date().getTime(),
-  },
-  {
-    _id: new ObjectID(),
-    text: 'Second todo',
-  },
-];
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 beforeEach((done) => {
   Todo.deleteMany({}).then(() => {
