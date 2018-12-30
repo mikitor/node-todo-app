@@ -10,17 +10,6 @@ const { todos, users, populateTodos, populateUsers } = require('./seed/seed');
 beforeEach(populateUsers);
 beforeEach(populateTodos);
 
-beforeEach((done) => {
-  Todo.deleteMany({}).then(() => {
-    Todo.insertMany(todos, (err, todos) => {
-      if (err) {
-        return done(err);
-      }
-      done();
-    });
-  });
-});
-
 describe('POST /todos', () => {
   it('should add a todo', (done) => {
     const text = 'test todo';
@@ -233,3 +222,88 @@ describe('GET /users/me', () => {
   });
 });
 
+describe('POST /users', () => {
+  it('should add a user', (done) => {
+    const email = 'ahh@gmail.com';
+    const password = 'coolThing';
+
+    request(app)
+      .post('/users')
+      .send({
+        email,
+        password
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.email).toBe(email);
+        expect(res.headers['x-auth']).toBeTruthy();
+        expect(res.body._id).toBeTruthy();
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User
+          .find({ email })
+          .then((user) => {
+            expect(user).toBeTruthy();
+            expect(user.length).toBe(1);
+            expect(user.password).not.toBe(password);
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+
+  it('should not create a user with an invalid email or password', (done) => {
+    const email = 'ahhgmail.com';
+    const password = 'cool';
+
+    request(app)
+      .post('/users')
+      .send({
+        email,
+        password
+      })
+      .expect(400)
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User
+          .find()
+          .then((user) => {
+            expect(user.length).toBe(2);
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+
+  it('should not create user if email in use', (done) => {
+    const email = users[0].email;
+    const password = 'testPassword';
+    request(app)
+      .post('/users')
+      .send({
+        email,
+        password,
+      })
+      .expect(400)
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+        User
+          .findOne({ email })
+          .then((user) => {
+            expect(user).toBeTruthy();
+            expect(user.password).not.toBe(password);
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+});
