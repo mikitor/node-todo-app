@@ -307,3 +307,55 @@ describe('POST /users', () => {
       });
   });
 });
+
+describe('POST /users/login', () => {
+  it('should login user and return auth token', (done) => {
+    const { email, password } = users[0];
+    request(app)
+      .post('/users/login')
+      .send({
+        email,
+        password,
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.header['x-auth']).toBeTruthy();
+        expect(res.body.email).toBe(email);
+        expect(res.body._id).toBeTruthy();
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User.findOne({ email })
+          .then((user) => {
+            expect(user.email).toBe(email);
+            expect(user.tokens.length).toBe(2);
+            expect(user.tokens[1]).toMatchObject({
+              access: 'auth',
+              token: res.header['x-auth'],
+            });
+            done();
+          })
+          .catch(err => done(err));
+      });
+  });
+
+  it('should return a 400 if the credentials are invalid', (done) => {
+    const email = 'test33@gmail.com';
+    const password = ' gz3u4z6vffff*A';
+    request(app)
+      .post('/users/login')
+      .send({
+        email,
+        password,
+      })
+      .expect(400)
+      .expect((res) => {
+        expect(res.header['x-auth']).toBeUndefined();
+        expect(res.body).toEqual({});
+      })
+      .end(done);
+  });
+});
