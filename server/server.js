@@ -53,6 +53,21 @@ app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
 
+app.post('/users/login', jsonParser, (req, res) => {
+  if (!req.body.email || !req.body.email) {
+    return res.status(400).send();
+  }
+  const { email, password } = req.body;
+  User
+    .findByCredentials(email, password)
+    .then((user) => {
+      return user.generateAuthToken().then((token) => {
+        res.set('x-auth', token).send(user);
+      });
+    })
+    .catch((err) => res.status(400).send());
+});
+
 app.get('/todos', (req, res) => {
   Todo.find().then((todos) => {
     res.send({ todos });
