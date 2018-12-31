@@ -359,3 +359,60 @@ describe('POST /users/login', () => {
       .end(done);
   });
 });
+
+describe('DELETE /users/me/token', () => {
+  it('should remove token if token is valid', (done) => {
+    const { token } = users[0].tokens[0];
+    const { _id } = users[0];
+
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', token)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({});
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User.findOne({ _id })
+          .then((user) => {
+            if (!user) {
+              return done(err);
+            }
+            expect(user.tokens.length).toBe(0);
+            done();
+          })
+          .catch((err) => done(err));
+      });
+  });
+
+  it('should return 400 if token is invalid', (done) => {
+    const { _id } = users[0];
+
+    request(app)
+      .delete('/users/me/token')
+      .set('x-auth', '123')
+      .expect(401)
+      .expect((res) => {
+        expect(res.body).toEqual({});
+      })
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        User.findOne({ _id })
+          .then((user) => {
+            if (!user) {
+              return done(err);
+            }
+            expect(user.tokens.length).toBe(1);
+            done();
+          })
+          .catch((err) => done(err));
+      });
+  });
+});
