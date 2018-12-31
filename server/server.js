@@ -68,6 +68,14 @@ app.post('/users/login', jsonParser, (req, res) => {
     .catch((err) => res.status(400).send());
 });
 
+app.delete('/users/me/token', authenticate, (req, res) => {
+  User.updateOne({ _id: req.user._id }, { $pull: { tokens: { token: req.token } } })
+    .then((user) => {
+      res.status(200).send();
+    })
+    .catch((err) => res.status(400).send());
+});
+
 app.get('/todos', (req, res) => {
   Todo.find().then((todos) => {
     res.send({ todos });
