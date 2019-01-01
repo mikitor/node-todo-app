@@ -13,17 +13,17 @@ const app = express();
 const port = process.env.PORT;
 
 // create application/json parser
-const jsonParser = bodyParser.json();
+app.use(bodyParser.json());
 
-// create application/x-www-form-urlencoded parser
-const urlencodedParser = bodyParser.urlencoded({ extended: false });
-
-app.post('/todos', jsonParser, (req, res) => {
+app.post('/todos', authenticate, (req, res) => {
   if (!req.body) return res.status(400);
   const { text } = req.body;
+  const _owner = req.user._id;
   const todo = new Todo({
     text,
+    _owner,
   });
+
   todo.save().then((docs) => {
     res.send(docs);
   }, (err) => {
@@ -31,7 +31,7 @@ app.post('/todos', jsonParser, (req, res) => {
   });
 });
 
-app.post('/users', jsonParser, (req, res) => {
+app.post('/users', (req, res) => {
   if (!req.body) return res.status(400);
   const { email, password } = req.body;
   const user = new User({
@@ -53,7 +53,7 @@ app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
 
-app.post('/users/login', jsonParser, (req, res) => {
+app.post('/users/login', (req, res) => {
   if (!req.body.email || !req.body.email) {
     return res.status(400).send();
   }
@@ -76,20 +76,25 @@ app.delete('/users/me/token', authenticate, (req, res) => {
     .catch((err) => res.status(400).send());
 });
 
-app.get('/todos', (req, res) => {
-  Todo.find().then((todos) => {
-    res.send({ todos });
-  }, (err) => {
-    res.status(400).send(err);
-  });
+app.get('/todos', authenticate, (req, res) => {
+  const _owner = req.user._id;
+
+  Todo.find({ _owner })
+    .then((todos) => {
+      res.send({ todos });
+    })
+    .catch((err) => {
+      res.status(400).send(err);
+    });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
+  const _owner = req.user._id;
   const { id } = req.params;
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
-  Todo.findOne({ _id: id }).then((todo) => {
+  Todo.findOne({ _id: id, _owner }).then((todo) => {
     if (!todo) {
       return res.status(404).send();
     }
@@ -99,12 +104,13 @@ app.get('/todos/:id', (req, res) => {
   });
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
+  const _owner = req.user._id;
   const { id } = req.params;
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
   }
-  Todo.findOneAndDelete({ _id: id }).then((todo) => {
+  Todo.findOneAndDelete({ _id: id, _owner }).then((todo) => {
     if (!todo) {
       return res.status(404).send();
     }
@@ -114,7 +120,8 @@ app.delete('/todos/:id', (req, res) => {
   });
 });
 
-app.patch('/todos/:id', jsonParser, (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
+  const _owner = req.user._id;
   const { id } = req.params;
   const body = _.pick(req.body, ['text', 'completed']);
 
@@ -122,7 +129,7 @@ app.patch('/todos/:id', jsonParser, (req, res) => {
     return res.status(404).send();
   }
 
-  if (_.isBoolean(body.completed) && body.completed) {
+  if (typeof body.completed === 'boolean' && body.completed) {
     body.completedAt = new Date().getTime();
   } else {
     body.completed = false;
@@ -131,7 +138,7 @@ app.patch('/todos/:id', jsonParser, (req, res) => {
 
   Todo
     .findOneAndUpdate(
-      { _id: id },
+      { _id: id, _owner },
       { $set: body },
       { new: true },
     )
