@@ -2,7 +2,6 @@ require('./config/config');
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const _ = require('lodash');
 const { ObjectID } = require('mongodb');
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
@@ -123,7 +122,8 @@ app.delete('/todos/:id', authenticate, (req, res) => {
 app.patch('/todos/:id', authenticate, (req, res) => {
   const _owner = req.user._id;
   const { id } = req.params;
-  const body = _.pick(req.body, ['text', 'completed']);
+    const { text, completed } = req.body;
+    const body = { text, completed };
 
   if (!ObjectID.isValid(id)) {
     return res.status(404).send();
