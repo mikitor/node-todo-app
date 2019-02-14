@@ -32,7 +32,7 @@ app.post('/users', async (req, res) => {
     const { email, password } = req.body;
     const user = new User({ email, password });
     await user.save();
-    const token = await user.generateAuthToken()
+    const token = await user.generateAuthToken();
     res.header('x-auth', token).send(user);
   } catch (e) {
     res.status(400).send(e);
@@ -127,11 +127,7 @@ app.patch('/todos/:id', authenticate, async (req, res) => {
       body.completedAt = null;
     }
 
-    const todo = await Todo.findOneAndUpdate(
-      { _id: id, _owner },
-      { $set: body },
-      { new: true },
-    );
+    const todo = await Todo.findOneAndUpdate({ _id: id, _owner }, { $set: body }, { new: true });
     if (!todo) {
       return res.status(404).send();
     }
@@ -144,5 +140,5 @@ app.patch('/todos/:id', authenticate, async (req, res) => {
 app.listen(port, () => console.log(`Started on port ${port}`));
 
 module.exports = {
-  app,
+  app
 };
